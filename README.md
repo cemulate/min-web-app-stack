@@ -1,1 +1,1 @@
-# Static Web App Stack
+# Minimal Web App Stack
