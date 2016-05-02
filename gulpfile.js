@@ -10,6 +10,7 @@ var concat  = require('gulp-concat');
 var es      = require('event-stream');
 var runSeq  = require('run-sequence');
 var shell   = require('gulp-shell');
+var ghPages = require('gulp-gh-pages');
 
 gulp.task('clean', function () {
     // Clear the destination folder
@@ -18,9 +19,11 @@ gulp.task('clean', function () {
 
 gulp.task('copy', function () {
     return es.concat(
-        gulp.src(['src/static/*.*'])
+        gulp.src(['src/static/**/*.*', '!src/static/js/**/*.*'])
             .pipe(gulp.dest('dist/static')),
         gulp.src(['src/*.*'])
+            .pipe(gulp.dest('dist')),
+        gulp.src(['package.json'])
             .pipe(gulp.dest('dist'))
     );
 });
@@ -38,7 +41,7 @@ gulp.task('scripts', function () {
 gulp.task('frontend', function() {
     var frontendPackages = ["foundation-sites", "jquery"];
 
-    var glob = "node_modules/+(" + frontendPackages.join("|") + ")/**/*.*";
+    var glob = "node_modules/+(" + frontendPackages.join("|") + ")/**/*";
     gutil.log(glob);
 
     return gulp.src([glob])
@@ -46,15 +49,25 @@ gulp.task('frontend', function() {
 });
 
 gulp.task('watch', function() {
-    gulp.watch('src/static/*.*', ['copy']);
+    gulp.watch(['src/static/**/*.*', '!src/static/js/**/*.*'], ['copy']);
     gulp.watch('src/static/js/*.js', ['scripts']);
 });
 
 gulp.task('run', shell.task('node server.js', {cwd: 'dist'}));
+
+gulp.task('noCompile', function(cb) {
+    runSeq('copy', 'run', cb);
+});
+gulp.task('nc', ['noCompile']);
 
 gulp.task('dist', function(cb) {
     runSeq('clean', ['copy', 'frontend', 'scripts'], cb);
 });
 gulp.task('default', function(cb) {
     runSeq('clean', ['copy', 'frontend', 'scripts', 'watch'], 'run', cb);
+});
+
+gulp.task('deploy', function() {
+  return gulp.src('./dist/**/*')
+    .pipe(ghPages());
 });
