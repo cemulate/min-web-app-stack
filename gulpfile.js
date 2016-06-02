@@ -11,6 +11,8 @@ var es      = require('event-stream');
 var runSeq  = require('run-sequence');
 var shell   = require('gulp-shell');
 var ghPages = require('gulp-gh-pages');
+var browserify = require('browserify');
+var source = require('vinyl-source-stream');
 
 gulp.task('clean', function () {
     // Clear the destination folder
@@ -28,14 +30,23 @@ gulp.task('copy', function () {
     );
 });
 
-gulp.task('scripts', function () {
-    // Concatenate, babelify and copy all JavaScript (except vendor scripts)
+gulp.task('babel', function () {
     return gulp.src(['src/static/js/**/*.js'])
         .pipe(concat('app.js'))
         .pipe(babel({
             presets: [es2015]
         }))
-        .pipe(gulp.dest('dist/static/js'))
+        .pipe(gulp.dest('dist/static/js'));
+});
+
+gulp.task('browserify', function() {
+    var b = browserify('dist/static/js/app.js').bundle();
+    return b.pipe(source('app.js')).pipe(gulp.dest('dist/static/js'));
+});
+
+var needBrowserify = false;
+gulp.task('scripts', function() {
+    needBrowserify ? runSeq('babel', 'browserify') : runSeq('babel');
 });
 
 gulp.task('frontend', function() {
